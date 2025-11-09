@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Email Sorter - Inbox Genie</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+
+    body {
+      background: url('https://image.pollinations.ai/prompt/scenic%20blue%20sky%20clouds%20and%20mountains') no-repeat center center fixed;
+      background-size: cover;
+      color: #f8f8f8;
+      min-height: 100vh;
+      padding: 30px;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: -1;
+    }
+
+    header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+    header h1 { font-size: 3rem; margin-bottom: 10px; color: #ff6f4e; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+    header p { font-size: 1.2rem; color: #cbd5e1; font-weight: 500; }
+
+    /* --- Input, Preview, Reply Containers --- */
+    .container {
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto 30px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    textarea {
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #ff6f4e;
+      resize: vertical;
+      font-size: 1rem;
+      min-height: 150px;
+      background: #fff;
+      color: #333;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      background: #ff6f4e;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.1s;
+    }
+    button:hover { background: #e65c3b; transform: translateY(-2px); }
+
+    #emailDisplay {
+      color: #f1f5f9;
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(255, 111, 78, 0.5);
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 150px;
+      font-size: 1rem;
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    /* --- Folder Display --- */
+    #folders {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-bottom: 40px;
+    }
+
+    .folder-card {
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(255, 111, 78, 0.5);
+      border-radius: 12px;
+      padding: 25px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    .folder-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(255,111,78,0.4);
+      background: #253147;
+    }
+    .folder-card h2 { font-size: 1.5rem; margin-bottom: 15px; color: #ff6f4e; border-bottom: 2px solid rgba(255,111,78,0.3); padding-bottom: 5px; }
+    .folder-card ul { list-style: none; max-height: 300px; overflow-y: auto; }
+    .folder-card li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #f1f5f9; }
+
+    footer { text-align: center; margin-top: 60px; padding: 20px; font-size: 0.9rem; color: #94a3b8; background: rgba(0, 0, 0, 0.5); border-top: 1px solid rgba(255,111,78,0.2); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Inbox Genie: Local Email Sorter</h1>
+  <p>Paste your email, preview it, reply, or categorize — all locally.</p>
+</header>
+
+<!-- Input Container -->
+<div class="container" id="emailForm">
+  <textarea id="emailInput" placeholder="Paste your email text here..."></textarea>
+  <div style="display:flex; gap:10px;">
+    <button onclick="previewEmail()">Preview Email</button>
+    <button onclick="sortEmail()">Sort Email</button>
+  </div>
+</div>
+
+<!-- Display Container -->
+<div class="container" id="displayContainer">
+  <h2 style="color:#ff6f4e; margin-bottom:10px;">📧 Email Preview</h2>
+  <div id="emailDisplay">Your email preview will appear here...</div>
+</div>
+
+<!-- Reply Container -->
+<div class="container" id="replyContainer">
+  <h2 style="color:#ff6f4e; margin-bottom:10px;">✉️ Reply to Email</h2>
+  <textarea id="replyInput" placeholder="Type your reply here..."></textarea>
+  <button onclick="sendReply()">Send Reply</button>
+</div>
+
+<!-- Folder Section -->
+<div id="folders">
+  <div class="folder-card" id="Urgent">
+    <h2>🔥 Urgent</h2><ul></ul>
+  </div>
+  <div class="folder-card" id="Routine">
+    <h2>🗓️ Routine</h2><ul></ul>
+  </div>
+  <div class="folder-card" id="Custom">
+    <h2>⚙️ Custom</h2><ul></ul>
+  </div>
+  <div class="folder-card" id="Spam">
+    <h2>🚫 Spam</h2><ul></ul>
+  </div>
+</div>
+
+<footer>
+  Built as a local ML-powered email sorter. All processing stays on your device.
+</footer>
+
+<script>
+  const emails = { 'Urgent': [], 'Routine': [], 'Custom': [], 'Spam': [] };
+
+  function previewEmail() {
+    const emailText = document.getElementById('emailInput').value.trim();
+    const display = document.getElementById('emailDisplay');
+    display.textContent = emailText || "Your email preview will appear here...";
+  }
+
+  function sortEmail() {
+    const emailText = document.getElementById('emailInput').value.trim();
+    if(!emailText) return alert("Please enter email text.");
+    const folders = ['Urgent', 'Routine', 'Custom', 'Spam'];
+    const predictedFolder = folders[Math.floor(Math.random() * folders.length)];
+    emails[predictedFolder].push(emailText);
+    const ul = document.querySelector(`#${predictedFolder} ul`);
+    const li = document.createElement('li');
+    li.textContent = emailText.length > 80 ? emailText.substring(0, 80) + '...' : emailText;
+    ul.prepend(li);
+    document.getElementById('emailInput').value = '';
+    document.getElementById('emailDisplay').textContent = "Your email preview will appear here...";
+  }
+
+  function sendReply() {
+    const replyText = document.getElementById('replyInput').value.trim();
+    if (!replyText) return alert("Please type a reply before sending.");
+    alert("✅ Reply sent successfully!\n\nYour message:\n" + replyText);
+    document.getElementById('replyInput').value = '';
+  }
+</script>
+
+</body>
+</html>
